@@ -1,0 +1,313 @@
+
+Como já vimos acima, para criar uma lista de produtos usando Android Studio com Kotlin, precisamos de uma RecyclerView que consome dados de um serviço API com Retrofit. Abaixo, estão relacionados uma sequência de dados para atingirmos este objetivo, então vamos seguir os passos abaixo. Esses produtos terão id, nome, descrição, quantidade e valor.
+
+
+
+==================
+PASSO A PASSO INICIO: 
+==================
+
+Passo 1: Adicionar as dependências no Gradle
+Adicione as dependências necessárias no arquivo build.gradle do seu módulo de aplicativo:
+
+dependencies {
+
+
+    implementation ("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation ("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation ("androidx.recyclerview:recyclerview:1.2.1")
+    implementation ("com.google.code.gson:gson:2.8.6")
+
+    implementation("androidx.core:core-ktx:1.10.1")
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("com.google.android.material:material:1.9.0")
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+
+    // Retrofit para requisições HTTP e Gson para parse de JSON
+    implementation ("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation ("com.squareup.retrofit2:converter-gson:2.9.0")
+
+    // RecyclerView
+    implementation ("androidx.recyclerview:recyclerview:1.2.1")
+
+    // Gson
+    implementation ("com.google.code.gson:gson:2.8.6")
+
+    //Interceptor
+    implementation ("com.squareup.okhttp3:logging-interceptor:4.9.1")
+    implementation ("com.squareup.okhttp3:okhttp:4.9.0")
+
+}
+
+---------------------------------------------------------------
+
+Passo 2: Criar o Modelo de Dados
+Crie uma classe Kotlin para os produtos:
+
+
+data class Produto(
+    val PRODUTO_ID: Int,
+    val PRODUTO_NOME: String,
+    val PRODUTO_DESC: String,
+    val PRODUTO_PRECO: String,
+    val PRODUTO_DESCONTO: String,
+    val CATEGORIA_ID: Int,
+    val PRODUTO_ATIVO: Int
+)
+
+---------------------------------------------------------------
+
+Passo 3: Definir a Interface Retrofit
+Defina uma interface para as chamadas HTTP com Retrofit:
+
+interface ApiService {
+    @GET("/")
+    fun getProdutos(): Call<List<Produto>>
+
+}
+
+---------------------------------------------------------------
+
+
+
+SERVER: CODIGO PHP PARA O REPLIT 
+<?php 
+$host = '144.22.157.228:3306';
+$db   = 'Delta';
+$user = 'delta';
+$pass = 'delta';
+$charset = 'utf8mb4';
+
+$dsn = "mysql:host=$host;dbname=$db;charset=$charset";
+$options = [
+    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    PDO::ATTR_EMULATE_PREPARES   => false,
+];
+
+try {
+    $pdo = new PDO($dsn, $user, $pass, $options);
+
+    $sql = "SELECT * FROM PRODUTO";
+    $stmt = $pdo->query($sql);
+
+    $usuarios = $stmt->fetchAll();
+
+    header('Content-Type: application/json');
+    echo json_encode($usuarios);
+
+} catch (\PDOException $e) {
+    echo "Erro de conexão: " . $e->getMessage();
+    exit;
+}
+?>
+
+------------------------
+
+Item do detalhe (a ser iterado no recycler view)
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="8dp">
+
+    <TextView
+        android:id="@+id/nomeProduto"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:textStyle="bold"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <TextView
+        android:id="@+id/descricaoProduto"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/nomeProduto"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <TextView
+        android:id="@+id/valorProduto"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/descricaoProduto"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
+
+
+	--------------------------------------------------
+
+Incluir um Recycler View no XML da Activity (no exemplo abaixo vemos a activity e o RECYCLER VIEW):
+
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerViewProdutos"
+        android:layout_width="77dp"
+        android:layout_height="400dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
+
+		--------------------------------------------------
+
+ADAPTER
+
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.TextView
+import androidx.recyclerview.widget.RecyclerView
+
+class CustomAdapter(private val dataSet: List<Produto>) :
+    RecyclerView.Adapter<CustomAdapter.ViewHolder>() {
+
+    class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val nome: TextView = view.findViewById(R.id.nomeProduto)
+        val descricao: TextView = view.findViewById(R.id.descricaoProduto)
+        val valor: TextView = view.findViewById(R.id.valorProduto)
+    }
+
+    override fun onCreateViewHolder(viewGroup: ViewGroup, viewType: Int): ViewHolder {
+        val view = LayoutInflater.from(viewGroup.context)
+            .inflate(R.layout.item_produto, viewGroup, false)
+
+        return ViewHolder(view)
+    }
+
+    override fun onBindViewHolder(viewHolder: ViewHolder, position: Int) {
+        val produto = dataSet[position]
+        viewHolder.nome.text = produto.PRODUTO_NOME
+        viewHolder.descricao.text = produto.PRODUTO_DESC
+        viewHolder.valor.text = produto.PRODUTO_PRECO.toString()
+    }
+
+    override fun getItemCount() = dataSet.size
+}
+
+--------------------------
+
+KT Activity
+
+import android.os.Bundle
+import android.util.Log
+import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
+
+class MainActivity : AppCompatActivity() {
+    private lateinit var recyclerView: RecyclerView
+    private lateinit var adapter: CustomAdapter
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        recyclerView = findViewById(R.id.recyclerViewProdutos)
+        recyclerView.layoutManager = LinearLayoutManager(this)
+
+        // Configuração do Logging Interceptor
+        val logging = HttpLoggingInterceptor { message ->
+            Log.d("OkHttp", message)
+        }.apply {
+            level = HttpLoggingInterceptor.Level.BODY
+        }
+
+        // Configuração do OkHttpClient com o interceptor
+        val okHttpClient = OkHttpClient.Builder()
+            .addInterceptor(logging)
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .build()
+
+        // Configuração do Retrofit
+        val retrofit = Retrofit.Builder()
+            .baseUrl("https://4af01f27-21ff-4a35-8f58-48517ff0c74c-00-2ohswx0v4qr6t.kirk.replit.dev/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .client(okHttpClient)
+            .build()
+
+        val apiService = retrofit.create(ApiService::class.java)
+
+        apiService.getProdutos().enqueue(object : Callback<List<Produto>> {
+            override fun onResponse(call: Call<List<Produto>>, response: Response<List<Produto>>) {
+                if (response.isSuccessful) {
+                    val produtos = response.body() ?: emptyList()
+                    adapter = CustomAdapter(produtos)
+                    recyclerView.adapter = adapter
+                } else {
+                    Log.e("API Error", "Response not successful. Code: ${response.code()}")
+                }
+            }
+
+            override fun onFailure(call: Call<List<Produto>>, t: Throwable) {
+                Log.e("API Failure", "Error fetching products", t)
+            }
+        })
+    }
+}
+
+------------------------------
+
+Incluído no arquivo Manifest a permissão para uso da internet (<uses-permission android:name="android.permission.INTERNET"/>) conforme pode ser visto abaixo:
+
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.MyApplication"
+        tools:targetApi="31">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>
+
+
+
+
